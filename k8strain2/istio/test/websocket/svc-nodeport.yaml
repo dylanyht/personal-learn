@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: scs-face-nodeport
+  namespace: test
+spec:
+  ports:
+  - name: scs-face
+    nodePort: 30090
+    port: 80
+  selector:
+    app: scs-face
+  type: NodePort

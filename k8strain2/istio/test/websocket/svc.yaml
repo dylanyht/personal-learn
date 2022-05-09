@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: scs-face
+  namespace: test
+spec:
+  ports:
+  - name: scs-face
+    port: 80
+  selector:
+    app: scs-face

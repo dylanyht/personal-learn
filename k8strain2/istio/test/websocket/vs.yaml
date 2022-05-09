@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: scs-face
+  namespace: test
+spec:
+  gateways:
+  - istio-system/gateway
+  hosts:
+  - gateway.bl.kutesmart.cn
+  http:
+  - match:
+    - uri:
+        prefix: /scs-face
+    route:
+    - destination:
+        host: scs-face
+        port:
+          number: 80
