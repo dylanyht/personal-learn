@@ -1,0 +1,30 @@
+#此文件需要放在存有ca.crt的目录下执行
+kind: ValidatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+metadata:
+  name: opa-validating-webhook
+webhooks:
+  - name: validating-webhook.openpolicyagent.org
+    admissionReviewVersions: ["v1", "v1beta1"]
+    namespaceSelector:
+      matchExpressions:
+      - key: openpolicyagent.org/webhook
+        operator: NotIn
+        values:
+        - ignore
+    failurePolicy: Ignore
+    rules:
+      - apiGroups:
+        - '*'
+        apiVersions:
+        - '*'
+        operations:
+        - '*'
+        resources:
+        - '*'
+    sideEffects: None
+    clientConfig: #注意  caBundle中的内容值md文档中创建ca.crt解码出来的内容  cat ca.crt | base64 | tr -d '\n'
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURBekNDQWV1Z0F3SUJBZ0lKQU5SRkxlQ0tzYXhlTUEwR0NTcUdTSWIzRFFFQkN3VUFNQmN4RlRBVEJnTlYKQkFNTURHRmtiV2x6YzJsdmJsOWpZVEFnRncweU1qQTFNVEl3TmpVNU5ETmFHQTh5TWprMk1ESXlOVEEyTlRrMApNMW93RnpFVk1CTUdBMVVFQXd3TVlXUnRhWE56YVc5dVgyTmhNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DCkFROEFNSUlCQ2dLQ0FRRUF3R2IzT3VWWGYwcm5paVhJOFo1VXdQYmYxUnpvVkp1cm8vQmlIZEdKdnRpODZLdDgKQy9QTTljU0xxOVVGOGhXbXFhcU9jODErVWU0Q1BLcVlEK0xYVXExdmZlTEpDdE5ZM0M0NVNia0RhNEJFSUcxbApQN0Y2dGp1dng4KzV2T281UnVVMmlqaEZhbW85R1Q4ZkVBZWIwSXVpNmNmWnZWRFRIaHN2aUZlcTB3ZnNzUlFTCktWaFQ0clZlbDgyUHh2VmYzbk9sQkpJZlNxTTJHV0NsbGJhb3dpc0FzZ1RrdXhaQTJHTkhyS0xqcURiY0wvODcKWGpTU3BLNkQweUltOGVxODNPbVNuSGhTWDhpS2diSnNubUc4RGR3aElHb1RqNVJIeGFBZEVLWlNTSFVGOGpkegpxRWNjeG9senVPcU54MVprdzVlV2ZNekZER3czOExJRk1iZi8xd0lEQVFBQm8xQXdUakFkQmdOVkhRNEVGZ1FVCmRvMTdEN0JWT1V3bnQyVW9uRXRrTVBMTmtoVXdId1lEVlIwakJCZ3dGb0FVZG8xN0Q3QlZPVXdudDJVb25FdGsKTVBMTmtoVXdEQVlEVlIwVEJBVXdBd0VCL3pBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQXJEdzZMTUNQaThybwp4emJBU3lwVzY3MGkybzA1M2ZWWStKZ3djNXQrZEJWMDFhTHpPV3ZFSEtWTXFITDJtZ0JHZU1tTjJ0dFBZSnJvCm9CV3dLNzRUdk1MV2ZmTDhYOWw2dk04U2JNdGFsODJlcjU0aWl6UjYxUFNrTGRRcXFWcm1pcXYrUUpDVGQ2V00Kb2VlWjc5UUswT2RaVDhPeXUrak85U1VvQ3draEJnMlZ3aVhycWR2Y1FWTm85L0dPSXhSclc1WXBYSnRRTWZBSQowWXhydE9FRVBydyt3Y0VSMGpseXBLM2svaW9BamYzS2h6U1pIYjhzSDRaSmpoQW9YaHpoTnd0ZFFBTmhkTjhEClVhV1REUW0ybFoyNk0zVW1ONG5rMUpBUWlGL0xyaUdRcXFQQ1ZBei8xcTZxLzZDUUFtdURTQ1U0ZERLVUovK2wKNDVFRlA2Z1Ewdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+      service:
+        namespace: opa
+        name: opa

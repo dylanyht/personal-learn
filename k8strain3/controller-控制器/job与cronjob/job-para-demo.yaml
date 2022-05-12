@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-para-demo
+spec:
+  parallelism: 2  #这只并行数量为2
+  completions: 8  #设置最少完成的pod数目
+  template:
+    spec:
+      containers:
+      - name: test-job 
+        image: busybox
+        command: ['echo', 'test paralle job']
+      restartPolicy: Never 
