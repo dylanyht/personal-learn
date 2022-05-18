@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata: 
+  name: traefik-dashboard
+  namespace: kube-system
+spec: 
+  entryPoints:
+  - web 
+  routes:
+  - match: Host(`traefik.tf.bltest.kutesmart.cn`)
+    kind: Rule 
+    services:
+    - name: api@internal    #引用traefik内部的
+      kind: TraefikService 

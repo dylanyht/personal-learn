@@ -1,0 +1,26 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nexus
+  namespace: kube-system
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`nexus.tf.bltest.kutesmart.cn`) && PathPrefix(`/foo`)
+    middlewares:
+    - name: strip-foo-path
+      namespace: default
+    services:
+    - kind: Service
+      name: nexus
+      namespace: default
+      port: 8081
+  - kind: Rule
+    match: Host(`nexus.tf.bltest.kutesmart.cn`) && (PathPrefix(`/static`) || PathPrefix(`/service`))  # 匹配 /static 和 /service 的请求
+    services:
+    - kind: Service
+      name: nexus
+      namespace: default
+      port: 8081

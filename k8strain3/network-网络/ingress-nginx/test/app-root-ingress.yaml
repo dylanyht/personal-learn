@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: rewrite
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/app-root: /gateway/ #添加自动跳转的路径
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      rewrite ^(/gateway)$ $1/ redirect;
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: rewrite.ng.bltest.kutesmart.cn
+    http:
+      paths:
+      - path: /gateway(/|$)(.*)
+        pathType: Prefix
+        backend: 
+          service:
+            name: my-nginx
+            port:
+              number: 80
