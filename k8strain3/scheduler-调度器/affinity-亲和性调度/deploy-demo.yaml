@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-ds-demo
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: mock-ds-demo
+  template:
+    metadata:
+      labels:
+        app: mock-ds-demo
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+          name: ngpt
+      tolerations: 
+      - key: "node-role.kubernets.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:  # pod反亲和
+          requiredDuringSchedulingIgnoredDuringExecution: #硬策略
+          - labelSelector:
+              matchExpressions:
+              - key: app #pod的标签
+                operator: In 
+                values: ["mock-ds-demo"]
+            topologyKey: kubernetes.io/hostname #以hostname为拓扑域

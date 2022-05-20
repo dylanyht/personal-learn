@@ -1,0 +1,17 @@
+---
+apiVersion: apisix.apache.org/v2beta2
+kind: ApisixRoute 
+metadata: 
+  name: nexus 
+  namespace: default
+spec: 
+  http: 
+  - name: test 
+    match: 
+      hosts: 
+      - nexus.api.bltest.kutesmart.cn
+      paths:
+      - "/*"
+    backends:
+    - serviceName: nexus 
+      servicePort: 8081

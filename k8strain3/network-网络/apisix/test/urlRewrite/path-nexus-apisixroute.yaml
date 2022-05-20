@@ -1,0 +1,28 @@
+---
+apiVersion: apisix.apache.org/v2beta2
+kind: ApisixRoute 
+metadata: 
+  name: nexus 
+  namespace: default
+spec: 
+  http: 
+  - name: test 
+    match: 
+      hosts: 
+      - nexus.api.bltest.kutesmart.cn
+      paths:
+      - "/nexus*"
+      - "/static/*"
+      - "/service/*"
+    plugins:
+     - name: proxy-rewrite  #url重写插件
+       enable: true 
+       config:
+         regex_uri: ["^/nexus(/|$)(.*)", "/$2"]
+     - name: redirect 
+       enable: true 
+       config: 
+         regex_uri: ["^(/nexus)$","$1/"]
+    backends:
+    - serviceName: nexus 
+      servicePort: 8081

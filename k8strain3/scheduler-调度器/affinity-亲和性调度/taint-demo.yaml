@@ -1,0 +1,28 @@
+# taint-demo.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taint
+  labels:
+    app: taint
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: taint
+  template:
+    metadata:
+      labels:
+        app: taint
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - name: http
+          containerPort: 80
+      tolerations:
+      - key: "test"
+#        value: "node"
+        operator: "Exists"   #当operator的值为Exists时value的值必须为空
+        effect: "NoSchedule"
