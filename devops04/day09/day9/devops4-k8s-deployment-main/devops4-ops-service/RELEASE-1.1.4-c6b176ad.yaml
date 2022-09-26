@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops4
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  namespace: devops4
+spec:
+  rules:
+  - host: devops4.ops.service
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: devops4-ops-service
+            port:
+              number: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    k8s-app: devops4-ops-service
+  name: devops4-ops-service
+  namespace: devops4
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: devops4-ops-service
+  template:
+    metadata:
+      labels:
+        k8s-app: devops4-ops-service
+      namespace: devops4
+      name: devops4-ops-service
+    spec:
+      containers:
+        - name: devops4-ops-service
+          image: 192.168.1.200:8088/devops4/devops4-ops-service:RELEASE-1.1.4-c6b176ad
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: web
+              protocol: TCP
+      serviceAccountName: devops4-ops-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: devops4-ops-service
+  name: devops4-ops-service
+  namespace: devops4
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: devops4-ops-service
+  name: devops4-ops-service
+  namespace: devops4
+spec:
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080
+  selector:
+    k8s-app: devops4-ops-service

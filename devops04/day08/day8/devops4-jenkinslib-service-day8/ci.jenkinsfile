@@ -1,0 +1,96 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def checkout = new Checkout()    //New实例化
+def build = new Build()
+def unittest = new UnitTest()
+def sonar = new Sonar()
+def gitcli = new GitLab()
+def artifact = new Artifact()
+
+//env.buildType = "${JOB_NAME}".split("-")[1]
+
+//流水线
+pipeline {
+    agent { label "build" }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                    env.commitID = gitcli.GetCommitID()
+                    env.buName = "${JOB_NAME}".split("-")[0]
+                    env.serviceName = "${JOB_NAME}".split("_")[0]
+                    currentBuild.description = """ branchName: ${env.branchName} \n"""
+                    currentBuild.displayName = "${env.commitID}"
+                }
+            }
+        }
+
+        stage("Build"){
+            steps{
+                script{
+                    println("Build")
+                    //build.CodeBuild("${env.buildType}")
+                    sh "${env.buildShell}"
+                }
+            }
+        }
+
+        /*stage("UnitTest"){
+            steps{
+                script{
+                    unittest.CodeTest("${env.buildType}")
+                }
+            }
+        }*/
+
+        stage("CodeScan"){
+            when {
+		        environment name: 'skipSonar', value: 'false'
+	        }
+            steps{
+                script{
+                    //代码扫描
+                    profileName= "${JOB_NAME}".split("-")[0]
+                    sonar.Init("${env.serviceName}", "java", profileName )
+                    //commit-status
+            
+                    groupName = profileName
+                    projectID = gitcli.GetProjectID("${env.serviceName}", groupName)
+
+                    sonar.CodeScan("${env.branchName}", env.commitID, projectID)           
+                }
+            }
+        }
+
+        stage("PushArtifact"){
+            steps{
+                script{        
+                    //Dir /buName/serviceName/version/serviceName-version.xxx
+                    version = "${env.branchName}-${env.commitID}"
+                    // 重命名
+                    JarName = sh returnStdout: true, script: """ls target | grep -E "jar\$" """
+                    fileName = JarName -"\n"
+                    fileType = fileName.split('\\.')[-1]
+                    newFileName = "${env.serviceName}-${version}.${fileType}"
+
+                    sh "cd target ; mv ${fileName}  ${newFileName} "
+                    artifact.PushArtifact("${env.buName}/${env.serviceName}/${version}", "target", "${newFileName}")
+                    
+                    
+                }
+            }
+        }
+
+       
+    }
+}
+
+

@@ -1,0 +1,104 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def checkout = new Checkout()    //New实例化
+def build = new Build()
+def unittest = new UnitTest()
+def sonar = new Sonar()
+def gitcli = new GitLab()
+def artifact = new Artifact()
+//env.buildType = "${JOB_NAME}".split("-")[1]
+
+ 
+
+
+//流水线
+pipeline {
+    agent { label "build" }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                    env.commitID = gitcli.GetCommitID()
+                    env.buName = "${JOB_NAME}".split("-")[0]
+                    env.serviceName = "${JOB_NAME}"
+                    currentBuild.description = """ branchName: ${env.branchName} \n"""
+                    currentBuild.displayName = "${env.commitId}"
+                }
+            }
+        }
+
+        stage("Build"){
+            steps{
+                script{
+                    println("Build")
+                    //build.CodeBuild("${env.buildType}")
+                    sh "${env.buildShell}"
+                }
+            }
+        }
+
+        /*stage("UnitTest"){
+            steps{
+                script{
+                    unittest.CodeTest("${env.buildType}")
+                }
+            }
+        }*/
+        stage("CodeScan"){
+            when {
+                environment name: 'skipSonar', value: 'false'
+            }
+            steps{
+                script{
+                    //代码扫描
+                    profileName = "${JOB_NAME}".split("-")[0]
+                    sonar.Init("${JOB_NAME}", "java", profileName )
+                    //commit-status
+                    groupName = profileName
+                    projectID = gitcli.GetProjectID("${JOB_NAME}", groupName)
+
+                    sonar.CodeScan("${env.branchName}", env.commitID, projectID)   
+                }
+
+            }
+        }
+        stage("PushArtifact"){
+            steps{
+                script{
+                    println("${env.commitID}")
+
+                    version = "${env.branchName}-${env.commitID}"
+
+                    JarName = sh returnStdout: true, script: """ls target | grep -E "jar\$" """
+                    fileName =  JarName -"\n"
+                    fileType = fileName.split('\\.')[-1]
+                    newFileName = "${env.serviceName}-${version}.${fileType}"
+                    
+                    sh "cd target ; mv ${fileName} ${newFileName} "
+                    artifact.PushArtifact("${env.buName}/${env.serviceName}/${version}", "target", "${newFileName}")
+                }
+            }
+        }
+    }
+}
+
+def PushArtifact(targetDir, filePath, fileName){
+    //上传制品
+        sh """
+        curl -X POST "http://172.16.77.64:9081/service/rest/v1/components?repository=devops4-local" \
+        -H "accept: application/json" \
+        -H "Content-Type: multipart/form-data" \
+        -F "raw.directory=${targetDir}" \
+        -F "raw.asset1=@${filePath}/${fileName};type=application/java-archive" \
+        -F "raw.asset1.filename=${fileName}" \
+        -u admin:admin000
+        """
+}

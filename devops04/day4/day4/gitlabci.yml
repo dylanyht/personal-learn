@@ -1,0 +1,36 @@
+stages:
+  - build 
+  - test
+  - deploy
+before_script:
+  - echo "Before script section"
+  - echo "For example you might run an update here or install a build dependency"
+  - echo "Or perhaps you might print out some debugging details"
+
+after_script:
+  - echo "After script section"
+  - echo "For example you might do some cleanup here"
+
+build:
+  stage: build
+  script:
+    - echo "Do your build here"
+
+test:
+  stage: test
+  script:
+    - echo "Do another parallel test here"
+    - echo "For example run a lint test"
+
+build-job:   
+  stage: build
+  script:
+    - "curl -X POST -F token=${CITOKEN} -F ref=main  http://192.168.1.200/api/v4/projects/2/trigger/pipeline"
+    - echo "Compile complete."
+    - sleep 1
+
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Do your deploy here"

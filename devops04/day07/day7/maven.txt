@@ -1,0 +1,55 @@
+mvn deploy:deploy-file \
+-DgroupId=com.devops \
+-DartifactId=zeyang \
+-Dversion=1.1.1-SNAPSHOT \
+-Dpackaging=jar  \
+-Dfile=target/demo-0.0.1-SNAPSHOT.jar \
+-Durl=http://192.168.1.200:8081/repository/devops4-snapshot/  \
+-DrepositoryId=mymaven
+
+
+
+
+com/devops/zeyang/1.1.1
+
+
+mvn deploy:deploy-file \
+-DgeneratePom=true \
+-DrepositoryId=mymaven \
+-Durl=http://192.168.1.200:8081/repository/devops4-snapshot/ \
+-DpomFile=pom.xml \
+-Dfile=target/demo-0.0.1-SNAPSHOT.jar
+
+
+
+curl -X POST "http://192.168.1.200:8081/service/rest/v1/components?repository=devops4-local" \
+-H "accept: application/json" \
+-H "Content-Type: multipart/form-data" \
+-F "raw.directory=/tmp" \
+-F "raw.asset1=@aopalliance-1.0.jar;type=application/java-archive" \
+-F "raw.asset1.filename=aopalliance-1.0.jar"
+
+
+http://192.168.1.200:8081/repository/devops4-local/devops4/devops4-maven-service/master-59e2974e/devops4-maven-service-master-59e2974e.jar
+
+
+
+http://192.168.1.200:8081/repository/devops4-local/devops4/devops4-maven-service/RELEASE-1.1.1-03dfb8ee/devops4-maven-service-RELEASE-1.1.1-03dfb8ee.jar
+
+
+1. CI  getcode  git clone 
+2. 
+
+
+curl --header "PRIVATE-TOKEN: N9mvJV4hq-z7yCcYEsC-" "http://192.168.1.200/api/v4/projects/7/repository/branches/master"
+
+
+
+
+
+
+
+
+
+
+

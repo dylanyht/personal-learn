@@ -1,0 +1,38 @@
+replicaCount: 1
+image:
+  repository: 192.168.1.200:8088/devops4/devops4-ops-service
+  pullPolicy: IfNotPresent
+  tag: RELEASE-1.1.6-db05dcbf
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ''
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 8080
+ingress:
+  enabled: true
+  className: ''
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+  - host: devops4.ops.service
+    paths:
+    - path: /
+      pathType: ImplementationSpecific
+  tls: []
+resources: {}
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,17 @@
+@Library("mylib") _ 
+
+def myutil = new org.devops.utils()
+
+
+pipeline {
+	agent { label "build"}
+	stages {
+		stage("build"){
+			steps{
+				script{
+					myutil.PrintMsg("jenkins")
+				}
+			}
+		}
+	}
+}

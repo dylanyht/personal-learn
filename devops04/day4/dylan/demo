@@ -1,0 +1,146 @@
+
+http://jen.bltest.cameobespoke.com/generic-webhook-trigger/invoke
+
+
+
+{
+    "name": "jenkins",
+    "version": "1.1.1",
+    "envName": "dev",
+    "users": [
+        "aa",
+        "bb"
+    ]
+}
+
+
+http://jen.bltest.cameobespoke.com/generic-webhook-trigger/invoke?token=devops4-commit-service
+
+
+checkout([$class: 'GitSCM', branches: [[name: 'main']], extensions: [], userRemoteConfigs: [[credentialsId: '0e7fa235-2542-4acb-b01c-8ed7df1b0f99', url: 'http://git.bltest.cameobespoke.com/devops4/devops4-commit-service.git']]])
+
+
+
+
+pipeline {
+    agent any
+
+    stages {
+        stage('CheckOut') {
+            steps {
+                script{
+                    checkout([$class: 'GitSCM', 
+                    branches: [[name: 'main']], 
+                    extensions: [], 
+                    userRemoteConfigs: [[credentialsId: '0e7fa235-2542-4acb-b01c-8ed7df1b0f99', 
+                                        url: 'http://git.bltest.cameobespoke.com/devops4/devops4-commit-service.git']]])
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

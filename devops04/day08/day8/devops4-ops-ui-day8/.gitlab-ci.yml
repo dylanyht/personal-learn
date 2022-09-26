@@ -1,0 +1,33 @@
+stages:
+  - build 
+  - test
+
+variables:
+  GIT_CHECKOUT: "false" 
+  RUNNER_TAG: "npm"
+
+checkout:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: .pre
+  variables:
+    GIT_CHECKOUT: "true" 
+  script:
+    - ls -l 
+  
+
+cibuild:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: build
+  script:
+    - npm install 
+    - npm run build
+citest:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: test
+  script:
+    - echo "npm test"
+
+

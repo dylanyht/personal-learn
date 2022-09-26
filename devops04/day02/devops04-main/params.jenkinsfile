@@ -1,0 +1,86 @@
+    pipeline{
+        //指定运行此流水线的节点
+        agent { node { label "build"}}
+
+        triggers {
+            cron 'H 11 * * *'
+        }
+
+        parameters {
+            string(defaultValue: '1.1.2 ', description: '版本号', name: 'VERSION', trim: true)
+            choice(choices: ['dev', 'test', 'stag', 'prod'], name: 'envType')
+        }
+
+
+        environment {
+            branchName = "dev"
+            //version = "1.1.1"
+        }
+        //流水线的阶段
+        stages{
+            //阶段1 获取代码
+            stage("CheckOut"){
+                environment{
+                    branchName = "test"
+                }
+                steps{
+                    script{
+                        echo "${branchName}"
+                        echo "${VERSION}"
+                        echo "${env.VERSION}"
+                        echo "${params.VERSION}"
+                    }
+                }
+            }
+            stage("Build"){
+                steps{
+                    script{
+                        println("运行构建")
+                        echo "${version}"
+                        echo "branchName: ${branchName}"
+                    }
+                }
+            }
+            stage("deploy"){
+                when {
+                    environment name: "branchName", value: "test"
+                }
+                input {
+                    message '选择发布环境'
+                    ok '提交'
+                    parameters {
+                        choice choices: ['dev', 'test', 'prod'], name: 'envName'
+                    }
+                }
+                steps{
+                    echo "deploy ${envName}"
+                }
+            }
+        }
+        post {
+            always{
+                script{
+                    println("流水线结束后，经常做的事情")
+                }
+            }
+            
+            success{
+                script{
+                    println("流水线成功后，要做的事情")
+                }
+            
+            }
+            failure{
+                script{
+                    println("流水线失败后，要做的事情")
+                }
+            }
+            
+            aborted{
+                script{
+                    println("流水线取消后，要做的事情")
+                }
+            
+            }
+        }
+    }

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-test
+spec:
+  selector:
+    matchLabels:
+      app: mysql-test
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql-test
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: password
+        ports:
+        - containerPort: 3306
+          name: mysql-test
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: mysql-pvc-test
+
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mysql-test 
+  name: mysql-test 
+  namespace: default
+spec:
+  ports:
+  - name: mysql-test 
+    port: 3306
+    nodePort: 33307
+  selector:
+    app: mysql-test 
+  type: NodePort

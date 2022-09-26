@@ -1,0 +1,62 @@
+pipeline{
+    //指定运行此流水线的节点
+    agent {
+        node{
+            label "build"
+        }
+    }
+    triggers{
+        cron 'H 11 * * *'
+    }
+    parameters {
+        string defaultValue: '1.1.2', description: '版本号', name: 'VERSION', trim: true
+        choice choices: ['dev', 'test', 'stag', 'prod'], description: '环境', name: 'envType'
+    }
+
+    environment{
+        branchName = "dev"
+        version = "1.1.1"
+    }
+
+    stages{
+        stage("Checkout"){
+            environment{
+                branchName = "test"
+            }
+            steps{
+                script{
+                        echo "${branchName}"
+                        echo "${VERSION}"
+                        echo "${env.VERSION}"
+                        echo "${params.VERSION}"
+                }
+            }
+        }
+        stage("Build"){
+            steps{
+                script{
+                    println("运行构建")
+                    echo "${version}"
+                    echo "branchName: ${branchName}"
+                }
+            }
+        }
+        stage("deploy"){
+            when{
+                environment name: "branchName", value: "test"
+            }
+            input{
+                  message '选择发布环境'
+                  id 'test'
+                  ok 'ok'
+                    parameters {
+                        choice choices: ['dev', 'test', 'prod'], description: '环境', name: 'envName'
+                    }
+            }
+            steps{
+                echo "deploy ${envName}"
+            }
+
+        }
+    }
+}

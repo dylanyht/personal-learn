@@ -1,0 +1,46 @@
+
+pipeline{
+    agent {
+        label "build"
+    }
+
+    stages{
+        stage("run"){
+            steps{
+                script{
+                    commitID = GetCommitID()
+                    groupName = "${JOB_NAME}".split('-')[0]
+                    projectID = GetProjectID("${JOB_NAME}", groupName)
+
+                    println("commitID: ${commitID}")
+                    println("projectID: ${projectID}")                    
+                }
+            }
+        }
+    }
+}
+
+
+//获取CommitID
+def GetCommitID(){
+    ID = sh returnStdout: true, script:"git rev-parse HEAD"
+    return ID -"\n"
+}
+
+//获取ProjectID
+def GetProjectID(projectName, groupName){
+    response = sh returnStdout: true,
+       script: """
+                  curl --location --request GET --X GET 'http://git.bltest.cameobespoke.com/api/v4/projects?search=devops4-maven-service' \
+                    --header 'PRIVATE-TOKEN: ekBVaNWJshUDXhfwYtEf' \
+                    --header 'Authorization: Basic YWRtaW46YWRtaW4wMDA='
+       """
+       response = readJSON text: response
+       if (response != [] ) {
+        for (p in response ){
+            if (p["namespace"]["name"] ==  groupName ){
+                return response[0]["id"]
+            }
+        }
+       }
+}

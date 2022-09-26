@@ -1,0 +1,90 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def checkout = new Checkout()    //New实例化
+def build = new Build()
+def unittest = new UnitTest()
+
+//env.buildType = "${JOB_NAME}".split("-")[1]
+
+//流水线
+pipeline {
+    agent { label "build" }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                }
+            }
+        }
+
+        stage("Build"){
+            steps{
+                script{
+                    println("Build")
+                    //build.CodeBuild("${env.buildType}")
+                    sh "${env.buildShell}"
+                }
+            }
+        }
+
+        /*stage("UnitTest"){
+            steps{
+                script{
+                    unittest.CodeTest("${env.buildType}")
+                }
+            }
+        }*/
+
+        stage("CodeScan"){
+            steps{
+                script{
+                    //代码扫描
+                    cliPath = "/data/devops4/tools/sonar-scanner-4.7.0.2747-linux/bin"
+
+                    withCredentials([usernamePassword(credentialsId: '4ed0196e-4bfa-4d1b-adbf-f1ac981c4393', 
+                                                    passwordVariable: 'SONAR_PASSWD', 
+                                                    usernameVariable: 'SONAR_USER')]) {
+                        sh """${cliPath}/sonar-scanner \
+                            -Dsonar.login=${SONAR_USER} \
+                            -Dsonar.password=${SONAR_PASSWD} \
+                            -Dsonar.projectVersion=${env.branchName}
+                        """
+
+                    }
+
+
+                    
+                    stage("CodeScan"){
+                        steps{
+                            script{
+                                //代码扫描
+                                withSonarQubeEnv(credentialsId: 'c05c3e07-d0b8-42f5-8454-4bf64631a980') {
+                                    cliPath = "/data/devops4/tools/sonar-scanner-4.7.0.2747-linux/bin"
+                                    sh """${cliPath}/sonar-scanner \
+                                        -Dsonar.login=${SONAR_USER} \
+                                        -Dsonar.password=${SONAR_PASSWD} \
+                                        -Dsonar.projectVersion=${branchName}
+                                    """
+                                }       
+                            }
+                        }
+                    }
+
+                     
+                                        
+                }
+            }
+        }
+
+        
+    }
+}
+

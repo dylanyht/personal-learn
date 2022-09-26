@@ -1,0 +1,41 @@
+
+
+
+stage("PushArtifact"){
+    steps{
+        script{
+            PushArtifactByNexusPlugin()
+        }
+    }
+}
+
+
+def PushArtifactByNexusPlugin(){
+    nexusArtifactUploader artifacts: [[artifactId: 'devops4-maven-service', 
+                                   classifier: '', 
+                                   file: './target/demo-0.0.1-SNAPSHOT.jar', 
+                                   type: 'jar']], 
+                                   credentialsId: '4f27869b-c5c8-4906-8198-49390c8ea1df', 
+                                   groupId: 'com.devops', 
+                                   nexusUrl: '172.16.77.64:9081', 
+                                   nexusVersion: 'nexus3', 
+                                   protocol: 'http', 
+                                   repository: 'devops4-release', 
+                                   version: '1.1.2'
+}
+
+
+
+
+
+nexusArtifactUploader artifacts: [[artifactId: 'devops4-maven-service', 
+                                   classifier: '', 
+                                   file: './target/demo-0.0.1-SNAPSHOT.jar', 
+                                   type: 'jar']], 
+                                   credentialsId: '4f27869b-c5c8-4906-8198-49390c8ea1df', 
+                                   groupId: 'com.devops', 
+                                   nexusUrl: '172.16.77.64:9081', 
+                                   nexusVersion: 'nexus3', 
+                                   protocol: 'http', 
+                                   repository: 'devops4-release', 
+                                   version: '1.1.2'

@@ -1,0 +1,31 @@
+.pipelineInit:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: .pre
+  variables:
+    GIT_CHECKOUT: "true"   ##局部开启作业的代码下载
+  script:
+    - ls -l 
+
+.cibuild:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: build
+  script:
+    - echo "${BUILD_SHELL}"
+    - ${BUILD_SHELL}
+  artifacts:
+     paths:
+      - ${ARTIFACT_PATH}
+
+.citest:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: test
+  script:
+    - echo "${TEST_SHELL}"
+    - ${TEST_SHELL}
+  artifacts:
+    reports:
+      junit: ${TEST_REPORTS}
+

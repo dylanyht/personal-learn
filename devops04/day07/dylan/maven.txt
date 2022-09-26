@@ -1,0 +1,84 @@
+mvn deploy:deploy-file
+-DgroupId=xxxxxx pom中的groupId
+-DartifactId=xxxxxx pom中的artifactId
+-Dversion=xxxxxx pom中的版本号version
+-Dpackaging=xxxxxx pom中打包方式
+-Dfile=xxxxxx 本地文件
+-Durl=xxxxxx 仓库url
+-DrepositoryId=xxxxxx 对应的是setting.xml（认证）
+
+
+mvn deploy:deploy-file \
+-DgroupId=com.devops \
+-DartifactId=dylan \
+-Dversion=1.1.1-SNAPSHOT \
+-Dpackaging=jar  \
+-Dfile=target/demo-0.0.1-SNAPSHOT.jar \
+-Durl=http://172.16.77.64:9081/repository/devops4-snapshot/  \
+-DrepositoryId=mymaven
+
+mvn deploy:deploy-file \
+-DgeneratePom=true \
+-DrepositoryId=mymaven \
+-Durl=http://172.16.77.64:9081/repository/devops4-snapshot/  \
+-DpomFile=pom.xml \
+-Dfile=target/demo-0.0.1-SNAPSHOT.jar
+
+
+
+curl -X POST "http://172.16.77.64:9081/service/rest/v1/components?repository=devops4-local" \
+-H "accept: application/json" \
+-H "Content-Type: multipart/form-data" \
+-F "raw.directory=/tmp" \
+-F "raw.asset1=@aopalliance-1.0.jar;type=application/java-archive" \
+-F "raw.asset1.filename=aopalliance-1.0.jar"
+
+
+ curl -X POST "http://172.16.77.64:9081/service/rest/v1/components?repository=devops4-local" \
+ -H "accept: application/json" \
+ -H "Content-Type: multipart/form-data" \
+ -F "maven2.groupId=com.newdevops" \
+ -F "maven2.artifactId=devopsapp" \
+ -F "maven2.version=1.1.5" \
+ -F "maven2.packaging=jar" \
+ -F "maven2.asset1=@demo-0.0.1-SNAPSHOT.jar;type=application/java-archive" \
+ -F "maven2.asset1.extension=demo-0.0.1-SNAPSHOT.jar" \
+ -u admin:admin000
+
+
+http://172.16.77.64:9081/repository/devops4-local/devops4/devops4-maven-service/main-435a3a55/devops4-maven-service-main-435a3a55.jar
+
+
+http://172.16.77.64:9081/repository/devops4-local/devops4/devops4-maven-service/main-435a3a55/devops4-maven-service-main-435a3a55.jar
+
+
+
+curl --request POST --header "PRIVATE-TOKEN: <your_access_token>" \
+"https://git.bltest.cameobespoke.com/api/v4/projects/6/repository/branches?branch=newbranch&ref=main"
+
+
+
+
+
+curl --header "PRIVATE-TOKEN: ekBVaNWJshUDXhfwYtEf" "https://git.bltest.cameobespoke.com/api/v4/projects/6/repository/branches/main"
+
+
+
+      pwd
+      ls target/
+      if [[ ${PROJECT_TYPE} == "java" ]];then
+          pkgName=`ls target/ | grep -e "jar$"`
+          cd target/
+          newPkgName=${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar
+          filePath=${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}/${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+          #Dir /buName/serviceName/version/serviceName-version.xxx
+          mv ${pkgName} ${newPkgName}
+          curl -X POST "http://172.16.77.64:9081/service/rest/v1/components?repository=devops4-local" \
+          -H "accept: application/json" \
+          -H "Content-Type: multipart/form-data" \
+          -F "raw.directory=${filePath}" \
+          -F "raw.asset1=@${newPkgName};type=application/java-archive" \
+          -F "raw.asset1.filename=${newPkgName}" -u admin:admin000
+      else
+          echo "PROJECT_TYPE ERROR [java]"
+      fi

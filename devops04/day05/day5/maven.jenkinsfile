@@ -1,0 +1,34 @@
+pipeline {
+    agent {
+        label "build"
+    }
+
+    parameters {
+      string defaultValue: 'http://192.168.1.200/devops4/devops4-maven-service.git', name: 'srcUrl'
+      string defaultValue: 'master', name: 'branchName'
+    }
+
+
+    stages{
+        stage('CheckOut') {
+            steps {
+                script{
+                
+                    checkout([$class: 'GitSCM', 
+                        branches: [[name: "${params.branchName}"]], 
+                        extensions: [], 
+                        userRemoteConfigs: [[credentialsId: '62a3150f-38f8-4c9d-9334-79072b1d75cc', 
+                                            url: "${params.srcUrl}"]]])
+                }
+            }
+        }
+
+        stage("Build"){
+            steps {
+                script {
+                    sh "/data/devops4/tools/apache-maven-3.8.5/bin/mvn clean package "
+                }
+            }
+        }
+    }
+}

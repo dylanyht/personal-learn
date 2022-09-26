@@ -1,0 +1,78 @@
+.pullartifact:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: pullartifact
+  rules:
+    - if: '$RUN_TYPE == "CD"'
+      when: always
+    - when: never
+  variables:
+    GIT_CHECKOUT: "false"   
+  after_script:
+    - ls -l 
+  script:
+    |- 
+      if [[ ${PROJECT_TYPE} == "java" ]];then
+
+          curl http://192.168.1.200:8081/repository/devops4-local/${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}/${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}/${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar \
+          -u admin:admin123 \
+          -o ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar  -s 
+      else
+          echo "PROJECT_TYPE ERROR [java]"
+      fi
+
+.deploy:
+  tags:
+    - "${RUNNER_TAG}" 
+  stage: deploy
+  rules:
+    - if: '$RUN_TYPE == "CD"'
+      when: always
+    - when: never
+  variables:
+    GIT_CHECKOUT: "false"   
+  after_script:
+    - ls -l 
+  script:
+    |- 
+      # 生成清单文件
+      rm -fr hosts 
+      echo '[servers]' >> hosts
+      for host in ${DEPLOY_HOSTS}
+      do 
+          echo ${host} >> hosts
+      done
+      
+      # 发布应用包
+      ansible servers -u root -m ping -i hosts 
+      # 清理和创建发布目录
+      ansible servers -u root -m shell -a "rm -fr ${TARGET_DIR}/${CI_PROJECT_NAME}/* &&  mkdir -p ${TARGET_DIR}/${CI_PROJECT_NAME} || echo file is exists"  -i hosts
+      PKG_NAME=${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar
+      # 复制app
+      ansible servers -u root -m copy -a "src=${PKG_NAME}  dest=${TARGET_DIR}/${CI_PROJECT_NAME}/${PKG_NAME}"  -i hosts
+
+      #发布脚本
+      curl http://192.168.1.200/devops4/devops4-gitlablib-service/-/raw/main/scripts/service.sh -s -o service.sh 
+      ansible servers -u root -m copy -a "src=service.sh  dest=${TARGET_DIR}/${CI_PROJECT_NAME}/service.sh"  -i hosts
+      #启动服务
+      ansible servers -u root -m shell -a "cd ${TARGET_DIR}/${CI_PROJECT_NAME} ;source /etc/profile  && sh service.sh ${CI_PROJECT_NAME} ${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA} ${PORT} start"  -i hosts
+
+
+
+.healthCheck:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: healthCheck
+  rules:
+    - if: '$RUN_TYPE == "CD"'
+      when: always
+    - when: never
+  variables:
+    GIT_CHECKOUT: "false"   
+  after_script:
+    - ls -l 
+  script:
+    - ansible servers -u root -m shell -a "cd ${TARGET_DIR}/${CI_PROJECT_NAME} ;source /etc/profile  && sh service.sh ${CI_PROJECT_NAME} ${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA} ${PORT} check" -i hosts
+
+       
+       

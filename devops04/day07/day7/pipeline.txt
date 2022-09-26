@@ -1,0 +1,31 @@
+
+stage("PushArtifact") {
+    steps {
+        script {
+
+            //com.example:demo:jar:0.0.1-SNAPSHOT
+            groupId = 
+
+            preadMavenPom file: 'pom.xml'
+            PushArtifactByNexusPlugin()
+
+
+
+        }
+    }
+}
+
+
+def PushArtifactByNexusPlugin(artifactId,file, type, groupId, repoName, version){
+    nexusArtifactUploader artifacts: [[artifactId: artifactId , 
+                                classifier: '', 
+                                file: file, 
+                                type: type]], 
+                      credentialsId: '3c88cd60-4e1e-4a7f-9dfe-33eeed6a07e5', 
+                      groupId: groupId, 
+                      nexusUrl: '192.168.1.200:8081', 
+                      nexusVersion: 'nexus3', 
+                      protocol: 'http', 
+                      repository: repoName, 
+                      version: version
+}

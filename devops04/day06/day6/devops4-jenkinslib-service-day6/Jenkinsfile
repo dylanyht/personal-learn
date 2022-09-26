@@ -1,0 +1,70 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def checkout = new Checkout()    //New实例化
+def build = new Build()
+def unittest = new UnitTest()
+def sonar = new Sonar()
+def gitcli = new GitLab()
+
+//env.buildType = "${JOB_NAME}".split("-")[1]
+
+//流水线
+pipeline {
+    agent { label "build" }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                }
+            }
+        }
+
+        stage("Build"){
+            steps{
+                script{
+                    println("Build")
+                    //build.CodeBuild("${env.buildType}")
+                    sh "${env.buildShell}"
+                }
+            }
+        }
+
+        /*stage("UnitTest"){
+            steps{
+                script{
+                    unittest.CodeTest("${env.buildType}")
+                }
+            }
+        }*/
+
+        stage("CodeScan"){
+            when {
+		        environment name: 'skipSonar', value: 'false'
+	        }
+            steps{
+                script{
+                    //代码扫描
+                    profileName= "${JOB_NAME}".split("-")[0]
+                    sonar.Init("${JOB_NAME}", "java", profileName )
+                    //commit-status
+                    commitID = gitcli.GetCommitID()
+                    groupName = profileName
+                    projectID = gitcli.GetProjectID("${JOB_NAME}", groupName)
+
+                    sonar.CodeScan("${env.branchName}", commitID, projectID)              
+                }
+            }
+        }
+
+        
+    }
+}
+

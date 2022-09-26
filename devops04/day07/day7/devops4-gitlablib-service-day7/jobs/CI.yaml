@@ -1,0 +1,118 @@
+.pipelineInit:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: .pre
+  variables:
+    GIT_CHECKOUT: "true"   ##局部开启作业的代码下载
+  script:
+    - ls -l 
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+
+.cibuild:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: build
+  script:
+    - echo "${BUILD_SHELL}"
+    - ${BUILD_SHELL}
+  artifacts:
+     paths:
+      - ${ARTIFACT_PATH}
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+
+.citest:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: test
+  script:
+    - echo "${TEST_SHELL}"
+    - ${TEST_SHELL}
+  artifacts:
+    reports:
+      junit: ${TEST_REPORTS}
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+
+.codescan:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: codescan
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+  script:
+    |- 
+      
+      echo ${SONAR_USER}
+      echo ${SONAR_PASSWD}
+      /data/devops4/tools/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner  \
+      -Dsonar.login=${SONAR_USER} \
+      -Dsonar.password=${SONAR_PASSWD} \
+      -Dsonar.projectVersion=${CI_COMMIT_BRANCH} \
+      -Dsonar.branch.name=${CI_COMMIT_BRANCH} \
+      -Dsonar.gitlab.commit_sha=${CI_COMMIT_SHA} \
+      -Dsonar.gitlab.ref_name=${CI_COMMIT_BRANCH} \
+      -Dsonar.gitlab.project_id=${CI_PROJECT_ID} \
+      -Dsonar.dynamicAnalysis=reuseReports \
+      -Dsonar.gitlab.failure_notification_mode=commit-status \
+      -Dsonar.gitlab.url=http://192.168.1.200 \
+      -Dsonar.gitlab.user_token=${GITLAB_TOKEN} \
+      -Dsonar.gitlab.api_version=v4
+
+.pushartifact:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: pushartifact  
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+  script:
+    |- 
+      if [[ ${PROJECT_TYPE} == "java" ]];then
+          pkgName=`ls target/ | grep -e "jar$"`
+          cd target/
+          newPkgName=${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar
+          filePath=${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}/${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+          #Dir /buName/serviceName/version/serviceName-version.xxx
+          mv ${pkgName} ${newPkgName}
+          curl -X POST "http://192.168.1.200:8081/service/rest/v1/components?repository=devops4-local" \
+          -H "accept: application/json" \
+          -H "Content-Type: multipart/form-data" \
+          -F "raw.directory=${filePath}" \
+          -F "raw.asset1=@${newPkgName};type=application/java-archive" \
+          -F "raw.asset1.filename=${newPkgName}" -u admin:admin123
+      else
+          echo "PROJECT_TYPE ERROR [java]"
+      fi
+
+
+.dockerbuild:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: dockerbuild
+  rules:
+    - if: '$RUN_TYPE == "CI"'
+      when: always
+    - when: never
+  script:
+    |- 
+      imageName=${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+      #登录镜像仓库
+      docker login -u admin -p Harbor12345 192.168.1.200:8088
+      # 构建镜像
+      docker build -t 192.168.1.200:8088/${imageName} .
+      # 上传镜像
+      docker push 192.168.1.200:8088/${imageName}
+      # 删除镜像
+      sleep 2
+      docker rmi 192.168.1.200:8088/${imageName}

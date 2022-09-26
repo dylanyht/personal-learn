@@ -1,0 +1,54 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def gitcli = new GitLab()
+def artifact = new Artifact()
+def deploy = new Deploy()
+
+env.projectName = "${JOB_NAME}".split("_")[0]
+env.buName = "${JOB_NAME}".split("-")[0]
+env.serviceName = "${JOB_NAME}".split("_")[0]
+
+pipeline {
+    agent {
+        label "build"
+    }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages {
+        stage("PullArtifact"){
+            steps{
+                script {
+                    projectID = gitcli.GetProjectID("${env.serviceName}", "${env.buName}")
+                    commitID = gitcli.GetBranchCommitID(projectID, "${env.branchName}")
+                    currentBuild.description = """ branchName: ${env.branchName} \n"""
+                    currentBuild.displayName = "${commitID}"
+                    env.releaseVersion = "${env.branchName}-${commitID}"
+
+                    path = "${env.buName}/${env.serviceName}/${env.releaseVersion}"
+                    env.pkgName = "${env.serviceName}-${env.releaseVersion}.jar"
+                    artifact.PullArtifact(path, pkgName)
+                }
+            }
+        }
+
+        stage("AnsibleDeploy"){
+            steps{
+                script{
+                    println("deploy  ${env.envList}")
+                    deploy.AnsibleDeploy()
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+

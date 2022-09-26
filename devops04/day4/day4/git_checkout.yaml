@@ -1,0 +1,27 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
+      when: never
+    - when: always
+
+stages:
+  - build 
+  - test
+
+variables:
+  ENV_TYPE: "dev"
+  GIT_CHECKOUT: "false" 
+
+cibuild:
+  stage: build
+  variables:
+    GIT_CHECKOUT: "true" 
+  script:
+    - ls -l 
+    - echo 123 >test.yaml 
+    - ls -l 
+
+citest1:
+  stage: test
+  script:
+    - ls -l 

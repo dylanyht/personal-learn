@@ -1,0 +1,159 @@
+@Library("mylib@main") _     //加载共享库
+import org.devops.*						// 导入库
+
+def checkout = new Checkout()    //New实例化
+def build = new Build()
+def unittest = new UnitTest()
+def sonar = new Sonar()
+def gitcli = new GitLab()
+
+//env.buildType = "${JOB_NAME}".split("-")[1]
+
+//流水线
+pipeline {
+    agent { label "build" }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                }
+            }
+        }
+
+        stage("Build"){
+            steps{
+                script{
+                    println("Build")
+                    //build.CodeBuild("${env.buildType}")
+                    sh "${env.buildShell}"
+                }
+            }
+        }
+
+        /*stage("UnitTest"){
+            steps{
+                script{
+                    unittest.CodeTest("${env.buildType}")
+                }
+            }
+        }*/
+
+        stage("CodeScan"){
+            when {
+		        environment name: 'skipSonar', value: 'false'
+	        }
+            steps{
+                script{
+                    //代码扫描
+                    profileName= "${JOB_NAME}".split("-")[0]
+                    sonar.Init("${JOB_NAME}", "java", profileName )
+                    //commit-status
+                    commitID = gitcli.GetCommitID()
+                    groupName = profileName
+                    projectID = gitcli.GetProjectID("${JOB_NAME}", groupName)
+
+                    sonar.CodeScan("${env.branchName}", commitID, projectID)              
+                }
+            }
+        }
+        
+        stage("PushArtifact") {
+            steps {
+                script {
+
+                    //读取pom文件获取坐标信息
+                    //pomData = readMavenPom file: 'pom.xml'
+                    //println(pomData.groupId)
+                    // com.example:demo:jar:0.0.1-SNAPSHOT
+                    buName = "${JOB_NAME}".split('-')[0]
+                    repoName = "${buName}-snapshot"
+                    //demo-0.0.1-SNAPSHOT.jar
+                    file = "target/${env.artifactId}-${env.version}.${env.packaging}"
+                    // println("${pomData.artifactId}-${pomData.version}.${pomData.packaging}")
+                    //用户输入获取坐标信息
+                    //PushArtifactByNexusPlugin(env.artifactId,file, env.packaging, env.groupId, repoName, env.version)
+
+                    //PushArtifactByNexusPlugin(pomData.artifactId,file, pomData.packaging, pomData.groupId, repoName, pomData.version)
+        
+                    //用户输入获取坐标信息
+                    //PushArtifactByMavenCLI(env.artifactId,file, env.packaging, env.groupId, repoName, env.version)
+                    
+
+                    // maven上传使用pom
+
+                    JarName = sh returnStdout: true, script: """ls target | grep -E "jar\$" """
+                    file = "target/" + JarName -"\n"
+                    println(file)
+                    
+                    PushArtifactByMavenPom(repoName,file)
+                }
+            }
+        }
+    }
+}
+
+
+
+def PushArtifactByMavenPom(repoName,file){
+    sh """
+        mvn deploy:deploy-file \
+        -Dfile=${file} \
+        -DpomFile=pom.xml \
+        -Durl=http://192.168.1.200:8081/repository/${repoName}  \
+        -DrepositoryId=mymaven
+    """
+}
+
+def PushArtifactByMavenCLI(artifactId,file, type, groupId, repoName, version){
+    sh """
+        mvn deploy:deploy-file \
+    -DgroupId=${groupId} \
+    -DartifactId=${artifactId} \
+    -Dversion=${version} \
+    -Dpackaging=${type} \
+    -Dfile=${file} \
+    -Durl=http://192.168.1.200:8081/repository/${repoName}  \
+    -DrepositoryId=mymaven
+"""
+}
+
+def PushArtifactByNexusPlugin(artifactId,file, type, groupId, repoName, version){
+    // println(artifactId)
+    // println("${file}, ${type}, ${groupId}, ${repoName}, ${version}")
+    nexusArtifactUploader artifacts: [[artifactId: artifactId , 
+                                classifier: '', 
+                                file: file, 
+                                type: type]], 
+                      credentialsId: '3c88cd60-4e1e-4a7f-9dfe-33eeed6a07e5', 
+                      groupId: groupId, 
+                      nexusUrl: '192.168.1.200:8081', 
+                      nexusVersion: 'nexus3', 
+                      protocol: 'http', 
+                      repository: repoName, 
+                      version: version
+}
+// def PushArtifactByNexusPlugin(){
+    //target/demo-0.0.1-SNAPSHOT.jar, jar, com.example, devops4-release, 0.0.1-SNAPSHOT
+//     nexusArtifactUploader artifacts: [[artifactId: 'devops4-maven-service', 
+//                                 classifier: '', 
+//                                 file: './target/demo-0.0.1-SNAPSHOT.jar', 
+//                                 type: 'jar']], 
+//                       credentialsId: '3c88cd60-4e1e-4a7f-9dfe-33eeed6a07e5', 
+//                       groupId: 'com.devops', 
+//                       nexusUrl: '192.168.1.200:8081', 
+//                       nexusVersion: 'nexus3', 
+//                       protocol: 'http', 
+//                       repository: 'devops4-release', 
+//                       version: '1.1.2'
+// }
+
+
+
+

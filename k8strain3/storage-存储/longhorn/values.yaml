@@ -1,0 +1,37 @@
+defaultSettings:
+  backupTarget: s3://backupbucket@us-east-1/backupstore
+  backupTargetCredentialSecret: minio-secret
+  createDefaultDiskLabeledNodes: true
+  defaultDataPath: /home/longhorn
+  replicaSoftAntiAffinity: false
+  storageOverProvisioningPercentage: 600
+  storageMinimalAvailablePercentage: 15
+  upgradeChecker: false
+  defaultReplicaCount: 2
+  defaultDataLocality: disabled
+  guaranteedEngineCPU:
+  defaultLonghornStaticStorageClass: longhorn-static-example
+  backupstorePollInterval: 500
+  taintToleration: key1=value1:NoSchedule; key2:NoExecute
+  systemManagedComponentsNodeSelector: "longhorn=longhorn"
+  priority-class: high-priority
+  autoSalvage: false
+  disableSchedulingOnCordonedNode: false
+  replicaZoneSoftAntiAffinity: false
+  volumeAttachmentRecoveryPolicy: never
+  nodeDownPodDeletionPolicy: do-nothing
+  mkfsExt4Parameters: -O ^64bit,^metadata_csum
+  guaranteed-engine-manager-cpu: 15
+  guaranteed-replica-manager-cpu: 15
+
+ingress:  # 开启ingress
+  enabled: true
+  ingressClassName: nginx  # 配置 ingressclass
+  host: longhorn.ng.bltest.kutesmart.cn
+  annotations: # 添加annotations
+    nginx.ingress.kubernetes.io/proxy-body-size: 10000m
+enablePSP: false
+persistence:
+  defaultClass: true
+  defaultFsType: ext4
+  defaultClassReplicaCount: 2  # 配置成节点数

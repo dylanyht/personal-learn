@@ -1,0 +1,107 @@
+@Library("mylib@feature-k8s") _     //加载共享库
+import org.devops.*                     // 导入库
+
+def gitcli = new GitLab()
+def deploy = new Deploy()
+def checkout = new Checkout() 
+
+env.projectName = "${JOB_NAME}".split("_")[0]
+env.buName = "${JOB_NAME}".split("-")[0]
+env.serviceName = "${JOB_NAME}".split("_")[0]
+
+pipeline {
+    agent {
+        label "build"
+    }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages {
+        stage("Checkout"){
+            steps{
+                script {
+                    println("GetCode")
+                    sh "[ -d ${env.serviceName} ] || mkdir ${env.serviceName}"
+                    ws("${WORKSPACE}/${env.serviceName}"){
+                        checkout.GetCode("${env.srcUrl}", "${env.branchName}")
+                        env.commitID = gitcli.GetCommitID()
+                        currentBuild.description = """ branchName: ${env.branchName} \n"""
+                        currentBuild.displayName = "${env.commitID}"
+                    }
+                    
+                }
+            }
+        }
+
+        stage("HelmDeploy"){
+            steps{
+                script{
+                    env.namespace = "${env.buName}"
+                    env.appName = "${env.serviceName}"
+                    currentBuild.description = "NS: ${env.namespace}"
+                  
+                    //Helm 发布
+                    sh """
+                        helm package "${env.appName}/"
+                        helm upgrade --install --create-namespace  "${env.appName}" ./"${env.appName}"-*.tgz -n ${env.namespace}
+                        helm history "${env.appName}"  -n ${env.namespace}
+                    """ 
+
+                    //获取release的历史版本   
+                    env.revision = sh returnStdout: true, script: """helm history ${env.appName} -n ${env.namespace} | grep -v 'REVISION' | awk '{print \$1}' """
+                    println("${env.revision}")
+                    println("${env.revision.split('\n').toString()}")
+                    env.REVISION = "${env.revision.split('\n').toString()}"
+                    println("${env.REVISION}")
+
+                    // 获取应用状态
+                    5.times{
+                        sh "sleep 2; kubectl -n ${env.namespace} get pod | grep ${env.appName}"
+                    }
+
+                }
+            }
+        }
+
+        stage("CheckHealth"){
+            steps{
+                script{
+                    result = sh returnStdout: true, script: """ curl "http://${env.domainName}/health" """
+                    if (result == "ok\n"){
+                        println("success!")
+                    }
+                }
+            }
+        }
+
+        stage("RollOut"){
+            input {
+                message "是否进行回滚"
+                ok "提交"
+                submitter "zeyang,aa"
+                parameters {
+                    choice(choices: ['yes', 'no'], name: 'opts')
+                }
+            }
+
+            steps{
+                script{
+                    switch("${opts}") {
+                        case "yes":
+                            def result = input  message: "选择回滚版本?", 
+                            parameters: [choice(choices: env.REVISION, name: 'rversion')]
+
+                            println("${result}")
+                            sh "helm rollback ${env.appName} ${result} -n ${env.namespace} "
+                            break
+
+                        case "no":
+                        break
+                    }
+                }
+            }
+        }
+    }
+}

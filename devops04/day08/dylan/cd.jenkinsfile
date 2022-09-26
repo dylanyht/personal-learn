@@ -1,0 +1,100 @@
+env.projectName = "${JOB_NAME}".split("_")[0]
+
+
+pipeline{
+    agent {
+        label "build"
+
+    }
+
+    stages{
+        stage("PullArtifact"){
+            steps{
+                script{
+                    env.buName = "${JOB_NAME}".split("-")[0]
+                    env.serviceName = "${JOB_NAME}".split("_")[0]
+
+                    projectID = GetProjectID("${env.serviceName}", "${env.buName}")
+                    commitID = GetBranchCommitID(projectID, "${env.branchName}")
+                    currentBuild.description = """ branchName: ${env.branchName} \n"""
+                    currentBuild.displayName = "${commitID}"
+
+                    path = "${env.buName}/${env.serviceName}/${env.branchName}-${commitID}"
+                    env.pkgName = "${env.serviceName}-${env.branchName}-${commitID}.jar"
+                    PullArtifact(path, pkgName)
+                }
+            }
+        }
+
+        stage("AnsibleDeploy"){
+            steps{
+                script{
+                    println("deploy ${env.envList}")
+                    //将主机写入清单文件
+                    sh "rm -fr hosts"
+                    for (host in "${env.deployHosts}".split(',')){
+                        sh " echo ${host} >> hosts"
+                    }
+                    sh "cat hosts"
+
+                        // ansible 发布jar
+                    sh """
+                        # 主机连通性检测
+                        ansible "${env.deployHosts}" -m ping -i hosts 
+                        # 清理和创建发布目录
+                        ansible "${env.deployHosts}" -m shell -a "rm -fr ${env.targetDir}/${env.projectName}/* &&  mkdir -p ${env.targetDir}/${env.projectName} || echo file is exists" 
+                        # 复制app
+                        ansible "${env.deployHosts}" -m copy -a "src=${env.pkgName}  dest=${env.targetDir}/${env.projectName}/${env.pkgName}" 
+                    """
+                }
+            }
+        }
+    }
+}
+
+//下载制品
+def PullArtifact(path, pkgName){
+    // path = devops4/devops4-maven-service/main-435a3a55
+    // pkgName = devops4-maven-service-main-435a3a55.jar
+    sh """
+    curl http://172.16.77.64:9081/repository/devops4-local/${path}/${pkgName} \
+    -u admin:admin000 \
+    -o ${pkgName} -s
+    """
+}
+
+def HttpReq(method, apiUrl){
+    response = sh returnStdout: true,
+       script: """
+                  curl --location --request ${method}  \
+                   'http://git.bltest.cameobespoke.com/api/v4/${apiUrl}' \
+                    --header 'PRIVATE-TOKEN: ekBVaNWJshUDXhfwYtEf'        """
+    response = readJSON text: response - "\n"
+    return response
+
+}
+
+def GetProjectID(projectName, groupName){
+    response = sh returnStdout: true,
+       script: """
+                  curl --location --request GET \
+                   'http://git.bltest.cameobespoke.com/api/v4/projects?search=${projectName}' \
+                    --header 'PRIVATE-TOKEN: ekBVaNWJshUDXhfwYtEf'        """
+       response = readJSON text: response
+       if (response != [] ) {
+        for (p in response ){
+            if (p["namespace"]["name"] ==  groupName ){
+                return response[0]["id"]
+            }
+        }
+       }
+}
+
+
+def GetBranchCommitID(projectID, branchName){
+    apiUrl = "projects/${projectID}/repository/branches/${branchName}"
+    response = HttpReq("GET", apiUrl)
+
+    return response.commit.short_id
+
+ }

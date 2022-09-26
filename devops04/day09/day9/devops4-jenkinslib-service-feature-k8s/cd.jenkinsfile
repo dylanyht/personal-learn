@@ -1,0 +1,100 @@
+@Library("mylib@feature-k8s") _     //加载共享库
+import org.devops.*                     // 导入库
+
+def gitcli = new GitLab()
+def deploy = new Deploy()
+
+env.projectName = "${JOB_NAME}".split("_")[0]
+env.buName = "${JOB_NAME}".split("-")[0]
+env.serviceName = "${JOB_NAME}".split("_")[0]
+
+pipeline {
+    agent {
+        label "build"
+    }
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages {
+        stage("GetDeployFile"){
+            steps{
+                script {
+                    projectId = 14
+                    appName = "${env.serviceName}"
+
+                    //获取devops4-ops-service 
+                    projectID = gitcli.GetProjectID("${env.serviceName}", "${env.buName}")
+                    commitID = gitcli.GetBranchCommitID(projectID, "${env.branchName}")
+
+                    //下载devops4-k8s-deployment中的部署文件
+                    env.version = "${env.branchName}-${commitID}"
+                    env.deployFile = "${env.version}.yaml"
+                    fileData = gitcli.GetRepoFile(projectId,"${appName}%2f${env.version}.yaml", "main" )
+                    //println(fileData)
+                    sh "rm -fr ${env.deployFile}"
+                    writeFile file: "${env.deployFile}", text: fileData 
+
+                }
+            }
+        }
+
+        stage("K8sDeploy"){
+            steps{
+                script{
+                    env.namespace = "${env.buName}"
+                    currentBuild.description = "NS: ${env.namespace}"
+                    
+                    sh """
+                        ## 发布应用
+                        kubectl apply -f ${env.deployFile} -n ${env.namespace}
+
+                    """
+
+                    // 获取应用状态
+                    5.times{
+                        sh "sleep 2; kubectl -n ${env.namespace} get pod | grep ${env.serviceName}"
+                    }
+                }
+            }
+        }
+
+        stage("CheckHealth"){
+            steps{
+                script{
+                    result = sh returnStdout: true, script: """ curl "http://${env.domainName}/health" """
+                    if (result == "ok\n"){
+                        println("success!")
+                    }
+                }
+            }
+        }
+
+        stage("RollOut"){
+            input {
+                message "是否进行回滚"
+                ok "提交"
+                submitter "zeyang,aa"
+                parameters {
+                    choice(choices: ['yes', 'no'], name: 'opts')
+                }
+            }
+
+            steps{
+                script{
+
+                    switch("${opts}") {
+                        case "yes":
+
+                        sh "kubectl rollout undo deployment/${env.serviceName} -n ${env.namespace} "
+                        break
+
+                        case "no":
+                        break
+                    }
+                }
+            }
+        }
+    }
+}

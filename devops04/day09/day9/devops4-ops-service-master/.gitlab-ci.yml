@@ -1,0 +1,31 @@
+stages:
+  - build 
+  - test
+
+variables:
+  GIT_CHECKOUT: "false" 
+  RUNNER_TAG: "maven"
+
+checkout:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: .pre
+  variables:
+    GIT_CHECKOUT: "true" 
+  script:
+    - ls -l 
+
+cibuild:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: build
+  script:
+    - /data/devops4/tools/apache-maven-3.8.5/bin/mvn clean package
+citest:
+  tags:
+    - "${RUNNER_TAG}"
+  stage: test
+  script:
+    - /data/devops4/tools/apache-maven-3.8.5/bin/mvn test
+
+

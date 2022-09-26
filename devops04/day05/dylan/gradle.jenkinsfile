@@ -1,0 +1,32 @@
+pipeline{
+    agent{
+        node{
+            label "build"
+        }
+    }
+    parameters {
+      string defaultValue: 'http://git.bltest.cameobespoke.com/devops4/devops4-gradle-service.git', name: 'srcUrl'
+      string defaultValue: 'main', name: 'branchName'
+    }
+
+    stages {
+        stage('CheckOut') {
+            steps {
+                script{
+                    checkout([$class: 'GitSCM', 
+                    branches: [[name: "${params.branchName}"]], 
+                    extensions: [], 
+                    userRemoteConfigs: [[credentialsId: '0e7fa235-2542-4acb-b01c-8ed7df1b0f99', 
+                                        url: "${params.srcUrl}"]]])
+                }
+            }
+        }
+        stage("Build"){
+            steps {
+                script {
+                    sh "gradle build "
+                }
+            }
+        }
+    }    
+}

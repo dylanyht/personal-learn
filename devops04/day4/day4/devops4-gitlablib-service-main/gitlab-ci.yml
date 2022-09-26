@@ -1,0 +1,34 @@
+include:
+  - project: 'devops4/devops4-gitlablib-service'
+    ref: main
+    file: 
+      - '/jobs/CI.yaml'
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: always
+    - if: $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
+      when: never
+    - when: always
+
+variables:
+  GIT_CHECKOUT: "false"   ## 全局关闭作业代码下载
+  BUILD_SHELL: "sh -x build.sh"  ## 构建命令
+  # TEST_SHELL: "mvn test "                        ## 测试命令
+  # ARTIFACT_PATH: "target/*jar"      ## 制品路径
+  # TEST_REPORTS: "target/surefire-reports/TEST-*.xml" ##测试报告
+  RUNNER_TAG: "builder"
+
+stages:
+  - build
+  - test
+
+pipelineInit:
+  extends: 
+    - .pipelineInit
+
+cibuild:
+  extends:
+    - .cibuild
+

@@ -1,0 +1,46 @@
+// pipeline{
+//     agent { label "build"}
+//     stages{
+//         stage("build"){
+//             steps {
+//                 echo "hello"
+//             }
+//         }
+//     }
+// }
+
+
+pipeline{
+    agent none
+
+    stages{
+        stage("build"){
+            agent {label "build"}
+            steps{
+                echo "building..."
+            }
+        }
+    }
+    post{
+        always{
+            script{
+                println("流水线结束后  要做的事")
+            }
+        }
+        success{
+            script{
+                println("流水线成功后  要做的事")
+            }
+        }
+        failure{
+            script{
+                println("流水线失败后  要做的事")
+            }
+        }
+        aborted{
+            script{
+                println("流水线取消后   要做的事")
+            }
+        }
+    }
+}

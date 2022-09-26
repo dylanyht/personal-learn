@@ -1,0 +1,22 @@
+.pullartifact:
+  tags:
+    - build
+  stage: deploy
+  rules:
+    - if: '$RUN_TYPE == "CD"'
+      when: always
+    - when: never
+  variables:
+    GIT_CHECKOUT: "false"   
+  after_script:
+    - ls -l 
+  script:
+    |- 
+      if [[ ${PROJECT_TYPE} == "java" ]];then
+
+          curl http://192.168.1.200:8081/repository/devops4-local/${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}/${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}/${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar \
+          -u admin:admin123 \
+          -o ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}.jar  -s 
+      else
+          echo "PROJECT_TYPE ERROR [java]"
+      fi

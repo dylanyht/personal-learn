@@ -1,0 +1,12 @@
+
+sonar-scanner
+-Dsonar.gitlab.commit_sha=17f9a175bcaf38e37b64c2089b6d70930822c038 \
+-Dsonar.gitlab.ref_name=master \
+-Dsonar.gitlab.project_id=7 \
+-Dsonar.dynamicAnalysis=reuseReports \
+-Dsonar.gitlab.failure_notification_mode=commit-status \
+-Dsonar.gitlab.url=http://192.168.1.200 \
+-Dsonar.gitlab.user_token=N9mvJV4hq-z7yCcYEsC- \
+-Dsonar.gitlab.api_version=v4
+
+
